@@ -191,13 +191,18 @@ def generate_android(metric):
           "use the regular openvpn 2.1 method to add routes if it's possible"
 
 
-def fetch_ip_data():
-    #fetch data from apnic
-    print "Fetching data from apnic.net, it might take a few minutes, please wait..."
-    url=r'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
-    data=urllib2.urlopen(url).read()
+def fetch_ip_data(localFn=None):
+    if localFn is None: # fetch from remote
+        # fetch data from apnic
+        print "Fetching data from apnic.net, it might take a few minutes, please wait..."
+        url=r'http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest'
+        data=urllib2.urlopen(url, timeout=15).read() # timeout in s
+    else: # use downloaded local file 
+        with open(localFn,'r') as fid:
+            data = fid.read()
     
-    cnregex=re.compile(r'apnic\|cn\|ipv4\|[0-9\.]+\|[0-9]+\|[0-9]+\|a.*',re.IGNORECASE)
+    print "Parsering APNIC data..."
+    cnregex=re.compile(r'apnic\|CN\|ipv4\|[0-9\.]+\|[0-9]+\|[0-9]+\|a.*',re.IGNORECASE)
     cndata=cnregex.findall(data)
     
     results=[]
@@ -223,7 +228,7 @@ def fetch_ip_data():
         #mask in *nix format
         mask2=32-int(math.log(num_ip,2))
         
-        results.append((starting_ip,mask,mask2))
+        results.append((starting_ip, mask, mask2))
          
     return results
 
@@ -232,7 +237,7 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description="Generate routing rules for vpn.")
     parser.add_argument('-p','--platform',
                         dest='platform',
-                        default='openvpn',
+                        default='win',
                         nargs='?',
                         help="Target platforms, it can be openvpn, mac, linux," 
                         "win, android. openvpn by default.")
